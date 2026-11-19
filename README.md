@@ -7,6 +7,47 @@ Repo gồm cả **backend** (Spring Boot, thư mục gốc) và **frontend** (Re
 - Bản chạy thật: **https://legacyvault.codes** (Azure App Service + Azure Database for MySQL, file lưu trên Cloudflare R2).
 - Môn học: SWP391. Tài liệu yêu cầu: xem [docs/README.md](docs/README.md).
 
+---
+
+## 👨‍💻 Đóng góp cá nhân / My Contributions — Trần Long Vân ([@longvan-shn](https://github.com/longvan-shn))
+
+> **Role:** Backend, Data Integrity, AI Reliability & Onboarding Engineer (**89 commits** across Backend, SQL Migrations, Integration Tests & Frontend UX)  
+> **Upstream Repo:** [`azerc18/legacy-vault`](https://github.com/azerc18/legacy-vault) · **Live Production:** [https://legacyvault.codes](https://legacyvault.codes)
+
+### Modules Owned Architecture
+
+```mermaid
+flowchart TD
+    Client["React SPA + Onboarding Tour\n& Offline Demo Adapter"] --> Sec["Spring Security / RBAC\nMasked 404 & VaultModificationGuard"]
+    Sec --> VaultAPI["Vault & Digital Asset APIs\nFR-01, FR-02, FR-20, FR-27"]
+    Sec --> DocAPI["Encrypted Legal Docs & Versioning\nAES-256-GCM + Post-Commit Delete"]
+    Sec --> MsgAPI["Time-Capsule Legacy Messages\nAtomic Delivery + Encrypted Media"]
+    VaultAPI --> Audit["AuditLogService & SQL Backfill\nVaultActivityLog + MySQL Migration"]
+    DocAPI --> Audit
+    DocAPI --> AI["AI OCR Forensics & Vaulty Chatbot\nGemini + Backup Model Failover"]
+    Audit --> DB[("MySQL 8.4 + Flyway\nTestcontainers Integration Suite")]
+```
+
+### Detailed Contributions
+
+1. **Vault & Digital Asset Management APIs (`FR-01`, `FR-02`, `FR-20`, `FR-27`)**
+   - Thiết kế entity, enum, repository và DTO cho `Vault` và `DigitalAsset`; triển khai Owner CRUD API (`/api/vaults`, `/api/vaults/{id}/assets`, gỡ beneficiary) và API giám sát cho Admin.
+   - Áp dụng `VaultModificationGuard` (`assertHandoverNotStarted`), bổ sung metadata `modifiable`/`lockReason` vào response và trả về `404` ẩn danh cho truy cập trái phép để chống dò ID tài nguyên (ID enumeration).
+2. **Encrypted Legal Document Storage, Transactional Deletion & Versioning (`FR-04`, `X5`)**
+   - Triển khai upload/download tài liệu pháp lý với mã hóa phía server **AES-256-GCM** (`CryptoService`) và cơ chế xóa file an toàn theo transaction (chỉ xóa file vật lý sau khi transaction cơ sở dữ liệu đã `commit`).
+   - Xây dựng hệ thống quản lý phiên bản tài liệu pháp lý (`document_group_id`, `version`, `is_current`, `@PrePersist`) cùng kiểm thử giới hạn upload và lịch sử phiên bản.
+3. **Audit Logging Service & SQL Backfill Migration (`FR-05`, `M4`)**
+   - Thiết kế dịch vụ `VaultActivityLog` / `AuditLogService` kết hợp phân quyền `@PreAuthorize`, lọc theo khoảng ngày và che giấu thao tác nội bộ của admin (`OWNER_HIDDEN_ACTIONS`).
+   - Viết script SQL backfill [`docs/backfill_audit_vault_id.sql`](docs/backfill_audit_vault_id.sql) và các bộ integration test chạy trên **MySQL thật bằng Testcontainers** (`VaultActivityLogIntegrationTest`, `VaultQueryIntegrationTest`).
+4. **Legacy Messages & Time-Capsule Scheduling (`F4a`, `F4b`)**
+   - Xây dựng luồng lưu trữ lời nhắn di nguyện hẹn giờ (time-capsule) kèm tệp đa phương tiện mã hóa (giới hạn 10MB), đảm bảo giao dịch nguyên tử (atomic delivery), gửi email thông báo sau commit (`after-commit`), xử lý múi giờ Việt Nam và kiểm soát quyền xem theo phiên (`view session`).
+5. **AI OCR Death Certificate Forensics & Multi-Model Failover**
+   - Triển khai module AI OCR phân tích, đối chiếu pháp lý giấy chứng tử (`Gemini`) và hệ thống dự phòng tự động (**backup model `gemini-3.5-flash` + `GEMINI_BACKUP_API_KEY`**) cho cả OCR và trợ lý Vaulty; gia cố parser JSON trước markdown block và viết unit test đầy đủ.
+6. **Asset Verifiers, Simulated Timestamp & Onboarding Walkthrough**
+   - Triển khai các bộ xác thực tài sản (`EMAIL`, `CRYPTO_WALLET`, `E_WALLET`, `SOCIAL_MEDIA`), cơ chế xác thực dấu thời gian mô phỏng, tour hướng dẫn tương tác đa vai trò (`spotlight tour`), bộ chuyển đổi Demo Mode offline và đồng bộ i18n (Việt/Anh).
+
+---
+
 ## Mục lục
 
 1. [Công nghệ](#1-công-nghệ)
